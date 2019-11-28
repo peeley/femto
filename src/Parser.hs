@@ -3,6 +3,7 @@ module Parser where
 import ParserType
 import Lexer
 import Control.Applicative ((<|>))
+import Data.Maybe (fromJust)
 
 data LispVal = String String | Integer Int | Float Float |
                Word String | Boolean Bool | List [LispVal]
@@ -55,3 +56,8 @@ parseExpr = do
     spaces
     parseList <|> parseQuote <|> parseBoolean  <|> parseString <|> 
         parseInt <|> parseWord
+
+parse :: String -> LispVal
+parse program = if snd result /= "" then error "Parse ended before end of file."
+                else fst result
+    where result = fromJust $ runParser parseExpr program
