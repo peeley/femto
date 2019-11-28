@@ -44,6 +44,14 @@ parseList = do
     char ')'
     return $ List vals
 
+parseQuote :: Parser LispVal
+parseQuote = do
+    char '\''
+    expr <- parseExpr
+    return $ List [Word "quote", expr]
+
 parseExpr :: Parser LispVal
-parseExpr = 
-    parseList <|> parseBoolean  <|> parseString <|> parseInt <|> parseWord
+parseExpr = do
+    spaces
+    parseList <|> parseQuote <|> parseBoolean  <|> parseString <|> 
+        parseInt <|> parseWord
