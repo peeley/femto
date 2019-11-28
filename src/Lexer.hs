@@ -2,7 +2,7 @@
 module Lexer where
 
 import ParserType
-import Control.Applicative
+import Control.Applicative ((<|>))
 import Control.Monad (void)
 
 satisfies :: (Char -> Bool) -> Parser Char
@@ -34,6 +34,9 @@ oneOrMore p = (:) <$> p <*> zeroOrMore p
 
 skipMany :: Char -> Parser ()
 skipMany char = void $ zeroOrMore (satisfies (char==))
+
+optional :: Char -> Parser String
+optional x =  fmap (:"") (char x) <|> pure ""
 
 spaces :: Parser ()
 spaces = skipMany ' '
