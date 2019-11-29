@@ -7,7 +7,7 @@ import Data.Maybe (fromJust)
 
 data LispVal = String String | Integer Int | Float Float |
                Word String | Boolean Bool | List [LispVal]
-               deriving Show
+               deriving (Show, Eq)
 
 parseString :: Parser LispVal
 parseString = do
