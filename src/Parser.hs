@@ -58,6 +58,8 @@ parseExpr = do
         parseInt <|> parseWord
 
 parse :: String -> LispVal
-parse program = if snd result /= "" then error "Parse ended before end of file."
-                else fst result
-    where result = fromJust $ runParser parseExpr program
+parse program = case result of 
+    Just (ast, "") -> ast
+    Just (_, rest) -> error "Parse ended before end of file."
+    Nothing -> error "Parse error."
+    where result = runParser parseExpr program

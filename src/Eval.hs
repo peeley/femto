@@ -14,6 +14,15 @@ eval env (List [Word "define", Word name, body]) = do
     oldEnv <- readIORef env
     writeIORef env (M.insert name (const evalBody) oldEnv)
     return $ Word name
+eval env (List [Word "print", val]) = do
+    eval env val >>= print
+    return $ List []
+eval env (List [Word "if", cond, t, f]) = do
+    evalCond <- eval env cond
+    case evalCond of
+        Boolean True -> eval env t
+        Boolean False -> eval env f
+        _ -> error "Expected boolean in if statement"
 eval env (Word word) = do
     m_env <- readIORef env
     let def = M.lookup word m_env

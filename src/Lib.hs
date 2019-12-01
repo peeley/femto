@@ -26,6 +26,7 @@ defaultEnv = M.fromList [("+", \[Integer x, Integer y] -> Integer (x + y)),
                          (">=", \[Integer x, Integer y] -> Boolean (x >= y)),
                          ("&&", \[Boolean x, Boolean y] -> Boolean (x && y)),
                          ("||", \[Boolean x, Boolean y] -> Boolean (x || y)),
+                         ("not", \[Boolean x] -> Boolean (not x)),
                          ("car", car),
                          ("cdr", cdr),
                          ("cons", cons)]
