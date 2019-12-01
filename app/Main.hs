@@ -5,4 +5,5 @@ import Lib
 main :: IO ()
 main = do
     putStrLn ""
-    repl
+    env <- newIORef defaultEnv
+    repl env

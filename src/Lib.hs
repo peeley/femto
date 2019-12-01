@@ -1,5 +1,7 @@
 module Lib ( 
-repl
+    repl,
+    defaultEnv,
+    newIORef
 ) where
 
 import ParserType
@@ -8,6 +10,7 @@ import Lexer
 import Eval
 import qualified Data.Map.Strict as M
 import System.IO
+import Data.IORef
 
 defaultEnv :: Environment
 defaultEnv = M.fromList [("+", \[Integer x, Integer y] -> Integer (x + y)),
@@ -42,12 +45,12 @@ cons [List x, List y] = List (x++y)
 cons [x, List y] = List (x:y)
 cons _ = error "Unable to combine args"
 
-repl :: IO ()
-repl = do
+repl :: IORef Environment -> IO ()
+repl env = do
     putStr "> "
     hFlush stdout
     input <- getLine
     let ast = parse input
-    let out = eval defaultEnv ast
+    out <- eval env ast
     print out
-    repl
+    repl env
