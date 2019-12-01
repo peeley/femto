@@ -10,14 +10,15 @@ type Environment = M.Map String ([LispVal] -> LispVal) -- map words to functions
 eval :: IORef Environment -> LispVal -> IO LispVal
 eval _ (List [Word "quote", val]) = return val
 eval env (List [Word "define", Word name, body]) = do 
+    evalBody <- eval env body
     oldEnv <- readIORef env
-    writeIORef env (M.insert name (const body) oldEnv)
+    writeIORef env (M.insert name (const evalBody) oldEnv)
     return $ Word name
 eval env (Word word) = do
     m_env <- readIORef env
-    let def = lookup word m_env
+    let def = M.lookup word m_env
     case def of
-        Just x -> return $ x ()
+        Just x -> return $ x [] -- apply const function to get x
         Nothing -> error "Word not defined"
 eval env (List (Word fun : args)) = do
     m_args <- mapM (eval env) args
