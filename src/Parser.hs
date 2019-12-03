@@ -7,7 +7,14 @@ import Data.Maybe (fromJust)
 
 data LispVal = String String | Integer Int | Float Float |
                Word String | Boolean Bool | List [LispVal]
-               deriving (Show, Eq)
+               deriving Eq
+
+instance Show LispVal where
+    show (String s) = "\"" ++ s ++ "\""
+    show (Integer i) = show i
+    show (Word w) = "#word:" ++ w
+    show (Boolean b) = if b then "#t" else "#f"
+    show (List l) = "(" ++ (init . tail . show l) ++ ")"
 
 parseString :: Parser LispVal
 parseString = do
@@ -57,9 +64,16 @@ parseExpr = do
     parseList <|> parseQuote <|> parseBoolean  <|> parseString <|> 
         parseInt <|> parseWord
 
+parseProgram :: Parser LispVal
+parseProgram = do
+    whitespace
+    expr <- parseExpr
+    whitespace
+    return expr
+
 parse :: String -> LispVal
 parse program = case result of 
     Just (ast, "") -> ast
     Just (_, rest) -> error "Parse ended before end of file."
     Nothing -> error "Parse error."
-    where result = runParser parseExpr program
+    where result = runParser parseProgram program

@@ -1,4 +1,6 @@
-module Lib ( 
+module Lib (
+    eval,
+    parse,
     repl,
     defaultEnv,
     newIORef

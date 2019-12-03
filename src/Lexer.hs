@@ -33,10 +33,13 @@ oneOrMore :: Parser a -> Parser [a]
 oneOrMore p = (:) <$> p <*> zeroOrMore p
 
 skipMany :: Char -> Parser ()
-skipMany char = void $ zeroOrMore (satisfies (char==))
+skipMany c = void $ zeroOrMore (char c)
 
 optional :: Char -> Parser String
 optional x =  fmap (:"") (char x) <|> pure ""
 
 spaces :: Parser ()
 spaces = skipMany ' '
+
+whitespace :: Parser ()
+whitespace = void $ zeroOrMore (char ' ' <|> char '\n' <|> char '\t')
