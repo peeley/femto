@@ -23,6 +23,9 @@ eval env (List [Word "if", cond, t, f]) = do
         Boolean True -> eval env t
         Boolean False -> eval env f
         _ -> error "Expected boolean in if statement"
+eval env (List [Word "do", List list]) = do
+    seqnce <-  mapM (eval env) list
+    return $ last seqnce
 eval env (Word word) = do
     m_env <- readIORef env
     let def = M.lookup word m_env

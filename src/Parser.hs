@@ -14,7 +14,7 @@ instance Show LispVal where
     show (Integer i) = show i
     show (Word w) = "#word:" ++ w
     show (Boolean b) = if b then "#t" else "#f"
-    show (List l) = "(" ++ (init . tail . show l) ++ ")"
+    show (List l) = "(" ++ (init . tail . show) l ++ ")"
 
 parseString :: Parser LispVal
 parseString = do
@@ -46,9 +46,9 @@ parseBoolean = do
 parseList :: Parser LispVal
 parseList = do
     char '('
-    spaces
+    whitespace
     vals <- zeroOrMore parseExpr
-    spaces
+    whitespace
     char ')'
     return $ List vals
 
@@ -60,7 +60,7 @@ parseQuote = do
 
 parseExpr :: Parser LispVal
 parseExpr = do
-    spaces
+    whitespace
     parseList <|> parseQuote <|> parseBoolean  <|> parseString <|> 
         parseInt <|> parseWord
 
