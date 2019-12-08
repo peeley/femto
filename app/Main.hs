@@ -7,7 +7,7 @@ import Control.Monad
 main :: IO ()
 main = do
     putStrLn ""
-    env <- newIORef defaultEnv
+    env <- defaultEnv
     args <- E.getArgs
     when (null args) $ repl env
     program <- readFile $ head args

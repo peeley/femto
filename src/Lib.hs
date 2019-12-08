@@ -14,24 +14,31 @@ import qualified Data.Map.Strict as M
 import System.IO
 import Data.IORef
 
-defaultEnv :: Environment
-defaultEnv = M.fromList [("+", \[Integer x, Integer y] -> Integer (x + y)),
-                         ("-", \[Integer x, Integer y] -> Integer (x - y)),
-                         ("*", \[Integer x, Integer y] -> Integer (x * y)),
-                         ("/", \[Integer x, Integer y] -> Integer (x `div` y)),
-                         ("^", \[Integer x, Integer y] -> Integer (x ^ y)),
-                         ("=", \[x, y] -> Boolean (x == y)),
-                         ("!=", \[x, y] -> Boolean (x /= y)),
-                         ("<", \[Integer x, Integer y] -> Boolean (x < y)),
-                         (">", \[Integer x, Integer y] -> Boolean (x > y)),
-                         ("<=", \[Integer x, Integer y] -> Boolean (x <= y)),
-                         (">=", \[Integer x, Integer y] -> Boolean (x >= y)),
-                         ("&&", \[Boolean x, Boolean y] -> Boolean (x && y)),
-                         ("||", \[Boolean x, Boolean y] -> Boolean (x || y)),
-                         ("not", \[Boolean x] -> Boolean (not x)),
-                         ("car", car),
-                         ("cdr", cdr),
-                         ("cons", cons)]
+defaultFuns :: Funs
+defaultFuns =  M.fromList 
+                [("+", \[Integer x, Integer y] -> Integer (x + y)),
+                 ("-", \[Integer x, Integer y] -> Integer (x - y)),
+                 ("*", \[Integer x, Integer y] -> Integer (x * y)),
+                 ("/", \[Integer x, Integer y] -> Integer (x `div` y)),
+                 ("^", \[Integer x, Integer y] -> Integer (x ^ y)),
+                 ("=", \[x, y] -> Boolean (x == y)),
+                 ("!=", \[x, y] -> Boolean (x /= y)),
+                 ("<", \[Integer x, Integer y] -> Boolean (x < y)),
+                 (">", \[Integer x, Integer y] -> Boolean (x > y)),
+                 ("<=", \[Integer x, Integer y] -> Boolean (x <= y)),
+                 (">=", \[Integer x, Integer y] -> Boolean (x >= y)),
+                 ("&&", \[Boolean x, Boolean y] -> Boolean (x && y)),
+                 ("||", \[Boolean x, Boolean y] -> Boolean (x || y)),
+                 ("not", \[Boolean x] -> Boolean (not x)),
+                 ("car", car),
+                 ("cdr", cdr),
+                 ("cons", cons)]
+
+defaultEnv :: IO Environment
+defaultEnv = do
+    vars <- newIORef M.empty
+    funs <- newIORef defaultFuns
+    return $ Environment { vars = vars, funs = funs}
 
 car :: [LispVal] -> LispVal
 car [List (x:xs)] = List [x]
@@ -48,7 +55,7 @@ cons [List x, List y] = List (x++y)
 cons [x, List y] = List (x:y)
 cons _ = error "Unable to combine args"
 
-repl :: IORef Environment -> IO ()
+repl :: Environment -> IO ()
 repl env = do
     putStr "> "
     hFlush stdout
