@@ -14,8 +14,9 @@ import qualified Data.Map.Strict as M
 import System.IO
 import Data.IORef
 
-defaultFuns :: Funs
-defaultFuns =  M.fromList 
+
+defaultFuncs :: DefaultFuncs
+defaultFuncs =  M.fromList 
                 [("+", \[Integer x, Integer y] -> Integer (x + y)),
                  ("-", \[Integer x, Integer y] -> Integer (x - y)),
                  ("*", \[Integer x, Integer y] -> Integer (x * y)),
@@ -37,8 +38,8 @@ defaultFuns =  M.fromList
 defaultEnv :: IO Environment
 defaultEnv = do
     vars <- newIORef M.empty
-    funs <- newIORef defaultFuns
-    return $ Environment { vars = vars, funs = funs}
+    funcs <- newIORef M.empty
+    return $ Environment { vars = vars, funcs = funcs, defaults = defaultFuncs }
 
 car :: [LispVal] -> LispVal
 car [List (x:xs)] = List [x]

@@ -4,10 +4,24 @@ import Parser
 import Data.IORef
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Control.Monad (when)
 
 type Vars = M.Map String LispVal -- map words to variables
-type Funs = M.Map String ([LispVal] -> LispVal)
-data Environment = Environment { vars :: IORef Vars, funs :: IORef Funs }
+data LispFunc = LispFunc { 
+                    args :: [String],
+                    body :: LispVal,
+                    closure :: Vars
+                    }
+instance Eq LispFunc where
+    a == b = body a == body b
+instance Ord LispFunc where
+    a <= b = body a <= body b
+type Funcs = M.Map String LispFunc
+type DefaultFuncs = M.Map String ([LispVal] -> LispVal)
+data Environment = Environment { 
+                        vars :: IORef Vars, 
+                        funcs :: IORef Funcs,
+                        defaults :: DefaultFuncs }
 
 eval :: Environment -> LispVal -> IO LispVal
 eval _ (List [Word "quote", val]) = return val
@@ -16,6 +30,12 @@ eval env (List [Word "define", Word name, body]) = do
     oldVars <- readIORef $ vars env
     writeIORef (vars env) (M.insert name evalBody oldVars)
     return $ Word name
+eval env (List [Word "define", List (Word name:args), body]) = do
+    oldFuncs <- readIORef $ funcs env
+    vars <- readIORef $ vars env
+    let func = LispFunc { args = map show args, body = body, closure = vars }
+    writeIORef (funcs env) (M.insert name func oldFuncs)
+    return $ List []
 eval env (List [Word "print", val]) = do
     eval env val >>= print
     return $ List []
@@ -36,8 +56,24 @@ eval env (List (Word fun : args)) = mapM (eval env) args >>= apply env fun
 eval _ val = return val
 
 apply :: Environment -> String -> [LispVal] -> IO LispVal
-apply env fun args = do
-    m_env <- readIORef $ funs env
-    case M.lookup fun m_env of
-        Just f -> return $ f args
-        Nothing -> error "Word is not a procedure."
+apply env func fargs = do
+    envFuncs <- readIORef $ funcs env
+    let m_lispFunc =  M.lookup func envFuncs
+    if isNothing m_lispFunc
+       then do
+           let primitive = M.lookup func $ defaults env
+           when (isNothing primitive) $ error "Word is not procedure."
+           return $ fromJust primitive fargs
+       else do
+            let lispFunc = fromJust m_lispFunc
+            let funcArgs = args lispFunc
+            when (length fargs /= length funcArgs) 
+                $ error "Incorrect number of args."
+            let argNames = args lispFunc
+            let params = zip argNames fargs
+            oldFuncVars <- readIORef $ vars env
+            funcVars <- newIORef $ M.union (M.fromList params) oldFuncVars
+            let funcEnv = Environment { vars = funcVars, 
+                                        funcs = funcs env,
+                                        defaults = defaults env}
+            eval funcEnv $ body lispFunc
