@@ -25,18 +25,14 @@ eval env (List [Word "if", cond, t, f]) = do
         Boolean True -> eval env t
         Boolean False -> eval env f
         _ -> error "Expected boolean in if statement"
-eval env (List [Word "do", List list]) = do
-    seqnce <-  mapM (eval env) list
-    return $ last seqnce
+eval env (List [Word "do", List list]) = last <$> mapM (eval env) list
 eval env (Word word) = do
     m_env <- readIORef $ vars env
     let def = M.lookup word m_env
     case def of
         Just x -> return x
         Nothing -> error "Word not defined"
-eval env (List (Word fun : args)) = do
-    m_args <- mapM (eval env) args
-    apply env fun m_args
+eval env (List (Word fun : args)) = mapM (eval env) args >>= apply env fun 
 eval _ val = return val
 
 apply :: Environment -> String -> [LispVal] -> IO LispVal
