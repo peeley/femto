@@ -35,7 +35,7 @@ eval env (List [Word "define", List (Word name:args), body]) = do
     vars <- readIORef $ vars env
     let func = LispFunc { args = map show args, body = body, closure = vars }
     writeIORef (funcs env) (M.insert name func oldFuncs)
-    return $ List []
+    return $ Word name
 eval env (List [Word "print", val]) = do
     eval env val >>= print
     return $ List []
@@ -53,7 +53,9 @@ eval env (Word word) = do
         Just x -> return x
         Nothing -> error "Word not defined"
 eval env (List (Word fun : args)) = mapM (eval env) args >>= apply env fun 
-eval _ val = return val
+eval env val@(Integer i) = return val
+eval env val@(Boolean b) = return val
+eval env val@(String s) = return val
 
 apply :: Environment -> String -> [LispVal] -> IO LispVal
 apply env func fargs = do

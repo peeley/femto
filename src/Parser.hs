@@ -5,14 +5,14 @@ import Lexer
 import Control.Applicative ((<|>))
 import Data.Maybe (fromJust)
 
-data LispVal = String String | Integer Int | Float Float |
+data LispVal = String String | Integer Int | 
                Word String | Boolean Bool | List [LispVal]
                deriving (Eq, Ord)
 
 instance Show LispVal where
     show (String s) = "\"" ++ s ++ "\""
     show (Integer i) = show i
-    show (Word w) = w
+    show (Word w) = "<word:" ++ w ++ ">"
     show (Boolean b) = if b then "#t" else "#f"
     show (List l) = "(" ++ (init . tail . show) l ++ ")"
 
