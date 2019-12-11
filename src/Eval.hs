@@ -58,24 +58,25 @@ eval env val@(Boolean b) = return val
 eval env val@(String s) = return val
 
 apply :: Environment -> String -> [LispVal] -> IO LispVal
-apply env func fargs = do
+apply env fname argVals = do
     envFuncs <- readIORef $ funcs env
-    let m_lispFunc =  M.lookup func envFuncs
+    let m_lispFunc =  M.lookup fname envFuncs
     if isNothing m_lispFunc
        then do
-           let primitive = M.lookup func $ defaults env
+           let primitive = M.lookup fname $ defaults env
            when (isNothing primitive) $ error "Word is not procedure."
-           return $ fromJust primitive fargs
+           return $ fromJust primitive argVals
        else do
             let lispFunc = fromJust m_lispFunc
             let funcArgs = args lispFunc
-            when (length fargs /= length funcArgs) 
+            when (length argVals /= length funcArgs) 
                 $ error "Incorrect number of args."
             let argNames = args lispFunc
-            let params = zip argNames fargs
-            oldFuncVars <- readIORef $ vars env
-            funcVars <- newIORef $ M.union (M.fromList params) oldFuncVars
+            let params = zip argNames argVals
+            outerScope <- readIORef $ vars env
+            funcVars <- newIORef $ M.union (M.fromList params) outerScope
             let funcEnv = Environment { vars = funcVars, 
                                         funcs = funcs env,
                                         defaults = defaults env}
+            print $ M.union (M.fromList params) outerScope            
             eval funcEnv $ body lispFunc

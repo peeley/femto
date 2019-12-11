@@ -12,7 +12,7 @@ data LispVal = String String | Integer Int |
 instance Show LispVal where
     show (String s) = "\"" ++ s ++ "\""
     show (Integer i) = show i
-    show (Word w) = "<word:" ++ w ++ ">"
+    show (Word w) = w
     show (Boolean b) = if b then "#t" else "#f"
     show (List l) = "(" ++ (init . tail . show) l ++ ")"
 
