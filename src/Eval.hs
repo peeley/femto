@@ -25,6 +25,7 @@ data Environment = Environment {
 
 eval :: Environment -> LispVal -> IO LispVal
 eval _ (List [Word "quote", val]) = return val
+eval env (List [Word "eval", val]) = eval env val >>= eval env
 eval env (List [Word "define", Word name, body]) = do 
     evalBody <- eval env body
     oldVars <- readIORef $ vars env
