@@ -17,6 +17,7 @@ instance Eq LispFunc where
 instance Ord LispFunc where
     a <= b = body a <= body b
 type Funcs = M.Map String LispFunc
+newtype InterpError = InterpError String
 type DefaultFuncs = M.Map String ([LispVal] -> LispVal)
 data Environment = Environment { 
                         vars :: IORef Vars, 
@@ -48,11 +49,16 @@ eval env (List [Word "if", cond, t, f]) = do
         _ -> error "Expected boolean in if statement"
 eval env (List [Word "do", List list]) = last <$> mapM (eval env) list
 eval env (Word word) = do
-    m_env <- readIORef $ vars env
-    let def = M.lookup word m_env
-    case def of
+    variables <- readIORef $ vars env
+    let varDef = M.lookup word variables
+    case varDef of
         Just x -> return x
-        Nothing -> error "Word not defined"
+        Nothing -> do
+            functions <- readIORef $ funcs env
+            let funcDef = M.lookup word functions
+            case funcDef of
+                Just _ -> return (Word word)
+                _ -> error $ "Word " ++ word ++ " not defined."
 eval env (List (Word fun : args)) = mapM (eval env) args >>= apply env fun 
 eval env val@(Integer i) = return val
 eval env val@(Boolean b) = return val
@@ -63,11 +69,16 @@ apply env fname argVals = do
     envFuncs <- readIORef $ funcs env
     let m_lispFunc =  M.lookup fname envFuncs
     if isNothing m_lispFunc
-       then do
-           let primitive = M.lookup fname $ defaults env
-           when (isNothing primitive) $ error "Word is not procedure."
-           return $ fromJust primitive argVals
-       else do
+        then do
+            let primitive = M.lookup fname $ defaults env
+            if isNothing primitive then do
+                envVars <- readIORef $ vars env
+                let passedFunc = M.lookup fname envVars
+                case passedFunc of
+                    Just (Word f) -> apply env f argVals
+                    Nothing -> error $ "Word " ++ fname ++ " is not procedure."
+            else return $ fromJust primitive argVals
+        else do
             let lispFunc = fromJust m_lispFunc
             let funcArgs = args lispFunc
             when (length argVals /= length funcArgs) 
