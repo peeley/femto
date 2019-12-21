@@ -48,21 +48,17 @@ eval env (List [Word "if", cond, t, f]) = do
         Boolean False -> eval env f
         _ -> error "Expected boolean in if statement"
 eval env (List [Word "do", List list]) = last <$> mapM (eval env) list
-eval env (Word word) = do
+eval env word@(Word name) = do
     variables <- readIORef $ vars env
-    let varDef = M.lookup word variables
+    let varDef = M.lookup name variables
     case varDef of
         Just x -> return x
-        Nothing -> do
-            functions <- readIORef $ funcs env
-            let funcDef = M.lookup word functions
-            case funcDef of
-                Just _ -> return (Word word)
-                _ -> error $ "Word " ++ word ++ " not defined."
+        _ -> return word
 eval env (List (Word fun : args)) = mapM (eval env) args >>= apply env fun 
 eval env val@(Integer i) = return val
 eval env val@(Boolean b) = return val
 eval env val@(String s) = return val
+eval _ val = error $ "Unable to evaluate value " ++ show val
 
 apply :: Environment -> String -> [LispVal] -> IO LispVal
 apply env fname argVals = do
@@ -82,7 +78,8 @@ apply env fname argVals = do
             let lispFunc = fromJust m_lispFunc
             let funcArgs = args lispFunc
             when (length argVals /= length funcArgs) 
-                $ error "Incorrect number of args."
+                $ error $ "Expected "++(show . length) funcArgs ++", received "
+                        ++ (show . length) argVals ++ " arguments."
             let argNames = args lispFunc
             let params = zip argNames argVals
             outerScope <- readIORef $ vars env
@@ -90,5 +87,4 @@ apply env fname argVals = do
             let funcEnv = Environment { vars = funcVars, 
                                         funcs = funcs env,
                                         defaults = defaults env}
-            print $ M.union (M.fromList params) outerScope            
             eval funcEnv $ body lispFunc
