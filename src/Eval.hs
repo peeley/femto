@@ -5,6 +5,7 @@ import Errors
 import Data.IORef
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.Either
 import Control.Monad (when)
 
 type Vars = M.Map String LispVal -- map words to variables
@@ -19,49 +20,57 @@ instance Ord LispFunc where
     a <= b = body a <= body b
 type Funcs = M.Map String LispFunc
 newtype InterpError = InterpError String
-type DefaultFuncs = M.Map String ([LispVal] -> LispVal)
+type DefaultFuncs = M.Map String ([LispVal] -> EvalResult)
 data Environment = Environment { 
                         vars :: IORef Vars, 
                         funcs :: IORef Funcs,
                         defaults :: DefaultFuncs }
 
-eval :: Environment -> LispVal -> IO LispVal
-eval _ (List [Word "quote", val]) = return val
-eval env (List [Word "eval", val]) = eval env val >>= eval env
-eval env (List [Word "define", Word name, body]) = do 
+eval :: Environment -> LispVal -> IO EvalResult
+eval _ (List [Word "quote", val]) = return $ return val
+eval env (List [Word "eval", val]) = eval env val
+eval env (List [Word "define", Word name, body]) = do
     evalBody <- eval env body
-    oldVars <- readIORef $ vars env
-    writeIORef (vars env) (M.insert name evalBody oldVars)
-    return $ Word name
+    case evalBody of
+        Right evalRes -> do
+            oldVars <- readIORef $ vars env
+            writeIORef (vars env) (M.insert name evalRes oldVars)
+            return $ Right $ Word name
+        Left err -> return $ Left err
 eval env (List [Word "define", List (Word name:args), body]) = do
     oldFuncs <- readIORef $ funcs env
     vars <- readIORef $ vars env
     let func = LispFunc { args = map show args, body = body, closure = vars }
     writeIORef (funcs env) (M.insert name func oldFuncs)
-    return $ Word name
+    return $ Right $ Word name
 eval env (List [Word "print", val]) = do
     eval env val >>= print
-    return $ List []
+    return $ Right $ List []
 eval env (List [Word "if", cond, t, f]) = do
     evalCond <- eval env cond
     case evalCond of
-        Boolean True -> eval env t
-        Boolean False -> eval env f
-        _ -> error "Expected boolean in if statement"
-eval env (List [Word "do", List list]) = last <$> mapM (eval env) list
+        Right (Boolean True) -> eval env t
+        Right (Boolean False) -> eval env f
+        _ -> return $ Left $ TypeError (show cond) "bool"
+eval env (List (Word "do":rest)) = last <$> mapM (eval env) rest
 eval env word@(Word name) = do
     variables <- readIORef $ vars env
     let varDef = M.lookup name variables
     case varDef of
-        Just x -> return x
-        _ -> return word
-eval env (List (Word fun : args)) = mapM (eval env) args >>= apply env fun 
-eval env val@(Integer i) = return val
-eval env val@(Boolean b) = return val
-eval env val@(String s) = return val
-eval _ val = error $ "Unable to evaluate value " ++ show val
+        Just x -> return $ Right x
+        _ -> return $ Right word
+eval env (List (Word fun : args)) = do 
+    argList <- mapM (eval env) args
+    if (length . rights) argList == length args then
+        apply env fun $ rights argList
+    else
+        (return . Left . head . lefts) argList
+eval env val@(Integer i) = return $ Right val
+eval env val@(Boolean b) = return $ Right val
+eval env val@(String s) = return $ Right val
+eval _ val = return $ Left $ Misc "Error when evaluating expression."
 
-apply :: Environment -> String -> [LispVal] -> IO LispVal
+apply :: Environment -> String -> [LispVal] -> IO EvalResult
 apply env fname argVals = do
     envFuncs <- readIORef $ funcs env
     let m_lispFunc =  M.lookup fname envFuncs
@@ -73,19 +82,19 @@ apply env fname argVals = do
                 let passedFunc = M.lookup fname envVars
                 case passedFunc of
                     Just (Word f) -> apply env f argVals
-                    Nothing -> error $ "Word " ++ fname ++ " is not procedure."
+                    Nothing -> return $ Left $ NotFunc fname
             else return $ fromJust primitive argVals
         else do
             let lispFunc = fromJust m_lispFunc
             let funcArgs = args lispFunc
-            when (length argVals /= length funcArgs) 
-                $ error $ "Expected "++(show . length) funcArgs ++", received "
-                        ++ (show . length) argVals ++ " arguments."
-            let argNames = args lispFunc
-            let params = zip argNames argVals
-            outerScope <- readIORef $ vars env
-            funcVars <- newIORef $ M.union (M.fromList params) outerScope
-            let funcEnv = Environment { vars = funcVars, 
-                                        funcs = funcs env,
-                                        defaults = defaults env}
-            eval funcEnv $ body lispFunc
+            if length argVals /= length funcArgs then 
+                return $ Left $ NumArgs fname (length funcArgs) (length argVals)
+            else do
+                let argNames = args lispFunc
+                let params = zip argNames argVals
+                outerScope <- readIORef $ vars env
+                funcVars <- newIORef $ M.union (M.fromList params) outerScope
+                let funcEnv = Environment { vars = funcVars, 
+                                            funcs = funcs env,
+                                            defaults = defaults env}
+                eval funcEnv $ body lispFunc

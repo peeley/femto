@@ -7,6 +7,7 @@ module Lib (
 ) where
 
 import ParserType
+import Errors
 import Parser
 import Lexer
 import Eval
@@ -17,22 +18,22 @@ import Data.IORef
 
 defaultFuncs :: DefaultFuncs
 defaultFuncs =  M.fromList 
-                [("+", \[Integer x, Integer y] -> Integer (x + y)),
-                 ("-", \[Integer x, Integer y] -> Integer (x - y)),
-                 ("*", \[Integer x, Integer y] -> Integer (x * y)),
-                 ("/", \[Integer x, Integer y] -> Integer (x `div` y)),
-                 ("^", \[Integer x, Integer y] -> Integer (x ^ y)),
-                 ("inc", \[Integer x] -> Integer (x+1)),
-                 ("dec", \[Integer x] -> Integer (x-1)),
-                 ("=", \[x, y] -> Boolean (x == y)),
-                 ("!=", \[x, y] -> Boolean (x /= y)),
-                 ("<", \[Integer x, Integer y] -> Boolean (x < y)),
-                 (">", \[Integer x, Integer y] -> Boolean (x > y)),
-                 ("<=", \[Integer x, Integer y] -> Boolean (x <= y)),
-                 (">=", \[Integer x, Integer y] -> Boolean (x >= y)),
-                 ("&&", \[Boolean x, Boolean y] -> Boolean (x && y)),
-                 ("||", \[Boolean x, Boolean y] -> Boolean (x || y)),
-                 ("not", \[Boolean x] -> Boolean (not x)),
+                [("+", \[Integer x, Integer y] -> Right $ Integer (x + y)),
+                 ("-", \[Integer x, Integer y] -> Right $ Integer (x - y)),
+                 ("*", \[Integer x, Integer y] -> Right $ Integer (x * y)),
+                 ("/", \[Integer x, Integer y] -> Right $ Integer (x `div` y)),
+                 ("^", \[Integer x, Integer y] -> Right $ Integer (x ^ y)),
+                 ("inc", \[Integer x] -> Right $ Integer (x+1)),
+                 ("dec", \[Integer x] -> Right $ Integer (x-1)),
+                 ("=", \[x, y] -> Right $ Boolean (x == y)),
+                 ("!=", \[x, y] -> Right $ Boolean (x /= y)),
+                 ("<", \[Integer x, Integer y] -> Right $ Boolean (x < y)),
+                 (">", \[Integer x, Integer y] -> Right $ Boolean (x > y)),
+                 ("<=", \[Integer x, Integer y] -> Right $ Boolean (x <= y)),
+                 (">=", \[Integer x, Integer y] -> Right $ Boolean (x >= y)),
+                 ("&&", \[Boolean x, Boolean y] -> Right $ Boolean (x && y)),
+                 ("||", \[Boolean x, Boolean y] -> Right $ Boolean (x || y)),
+                 ("not", \[Boolean x] -> Right $ Boolean (not x)),
                  ("car", car),
                  ("head", car),
                  ("cdr", cdr),
@@ -46,23 +47,22 @@ defaultEnv = do
     funcs <- newIORef M.empty
     return $ Environment { vars = vars, funcs = funcs, defaults = defaultFuncs }
 
-car :: [LispVal] -> LispVal
-car [List (x:xs)] = x
-car [List []] = error "Empty list"
-car _ = error "Error: car expects nonempty list."
+car :: [LispVal] -> EvalResult
+car [List (x:xs)] = return x
+car l = Left $ TypeError (show l) "nonempty list"
 
-cdr :: [LispVal] -> LispVal
-cdr [List (x:xs)] = List xs
-cdr _ = error "Error: cdr expects nonempty list."
+cdr :: [LispVal] -> EvalResult
+cdr [List (x:xs)] = return $ List xs
+cdr l = Left $ TypeError (show l) "nonempty list"
 
-cons :: [LispVal] -> LispVal
-cons [List x, List y] = List (x++y)
-cons [x, List y] = List (x:y)
-cons _ = error "Error: cons expects two lists, or value and list"
+cons :: [LispVal] -> EvalResult
+cons [List x, List y] = return $ List (x++y)
+cons [x, List y] = return $ List (x:y)
+cons x = Left $ TypeError (show x) "two lists or singleton and list"
 
-isNull :: [LispVal] -> LispVal
-isNull [List l] = if null l then Boolean True else Boolean False
-isNull _ = error "Error: empty? expects list"
+isNull :: [LispVal] -> EvalResult
+isNull [List l] = if null l then Right (Boolean True) else Right (Boolean False)
+isNull x = Left $ TypeError (show x) "list"
 
 repl :: Environment -> IO ()
 repl env = do
@@ -71,5 +71,6 @@ repl env = do
     input <- getLine
     let ast = parse input
     out <- eval env ast
-    print out
-    repl env
+    case out of
+        Left err -> print err >> repl env
+        Right result -> print result >> repl env
