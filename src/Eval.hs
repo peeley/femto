@@ -1,6 +1,7 @@
 module Eval where
 
 import Parser
+import Errors
 import Data.IORef
 import qualified Data.Map.Strict as M
 import Data.Maybe
