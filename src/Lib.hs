@@ -3,7 +3,8 @@ module Lib (
     parse,
     repl,
     defaultEnv,
-    newIORef
+    newIORef,
+    LispVal
 ) where
 
 import ParserType
