@@ -82,7 +82,7 @@ apply env fname argVals = do
                 let passedFunc = M.lookup fname envVars
                 case passedFunc of
                     Just (Word f) -> apply env f argVals
-                    Nothing -> return $ Left $ NotFunc fname
+                    _ -> return $ Left $ NotFunc fname
             else return $ fromJust primitive argVals
         else do
             let lispFunc = fromJust m_lispFunc
