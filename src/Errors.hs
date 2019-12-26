@@ -4,7 +4,7 @@ import Parser (LispVal)
 
 data Error = TypeError String String | NumArgs String Int Int |
                     Undefined String | NotFunc String | ParseErr String |
-                    Misc String
+                    Misc String deriving Eq
 
 type EvalResult = Either Error LispVal
 
