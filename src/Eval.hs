@@ -65,10 +65,10 @@ eval env (List (Word fun : args)) = do
         apply env fun $ rights argList
     else
         (return . Left . head . lefts) argList
+eval env val@(List [x]) = return $ Left $ Misc $ show x ++ " is not procedure."
 eval env val@(Integer i) = return $ Right val
 eval env val@(Boolean b) = return $ Right val
 eval env val@(String s) = return $ Right val
-eval _ val = return $ Left $ Misc "Error when evaluating expression."
 
 apply :: Environment -> String -> [LispVal] -> IO EvalResult
 apply env fname argVals = do

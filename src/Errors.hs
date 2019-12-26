@@ -15,5 +15,5 @@ instance Show Error where
                                 ++ show exp ++ " args, received " ++ show rec
     show (Undefined name) = "Error: symbol " ++ name ++ " is undefined."
     show (NotFunc name) = "Error: symbol " ++ name ++ " is not a procedure."
-    show (ParseErr loc) = "Error: parser error at " ++ loc
+    show (ParseErr expr) = "Error: unable to parse " ++ expr
     show (Misc etc) = "Error: " ++ etc
