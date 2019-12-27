@@ -25,7 +25,7 @@ defaultFuncs =  M.fromList
                  ("!=", \[x, y] -> return $ Boolean (x /= y)),
                  ("<", lt), (">", gt), ("<=", lte), (">=", gte), ("&&", and_),
                  ("||", or_), ("not", not_), ("car", car), ("head", car),
-                 ("cdr", cdr), ("tail", cdr), ("cons", cons), ("null?", isNull)]
+                 ("cdr", cdr), ("tail", cdr), ("cons", cons)]
 
 defaultEnv :: IO Environment
 defaultEnv = do
@@ -124,10 +124,6 @@ cons :: [LispVal] -> EvalResult
 cons [List x, List y] = return $ List (x++y)
 cons [x, List y] = return $ List (x:y)
 cons x = Left $ TypeError (show x) "two lists or singleton and list"
-
-isNull :: [LispVal] -> EvalResult
-isNull [List l] = if null l then Right (Boolean True) else Right (Boolean False)
-isNull x = Left $ TypeError (show x) "list"
 
 repl :: Environment -> IO ()
 repl env = do

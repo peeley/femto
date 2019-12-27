@@ -65,7 +65,7 @@ eval env (List (Word fun : args)) = do
         apply env fun $ rights argList
     else
         (return . Left . head . lefts) argList
-eval env val@(List [x]) = return $ Left $ Misc $ show x ++ " is not procedure."
+eval env val@(List [x]) = return $ Left $ NotFunc $ show x
 eval env val@(Integer i) = return $ Right val
 eval env val@(Boolean b) = return $ Right val
 eval env val@(String s) = return $ Right val

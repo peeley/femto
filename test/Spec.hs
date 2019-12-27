@@ -72,10 +72,6 @@ testListFuncs = TestCase $ do
     assertBool "Head/car fails on empty" (isLeft result)
     result <- eval env $ parse "(tail '())"
     assertBool "Tail/cdr fails on empty" (isLeft result)
-    result <- eval env $ parse "(null? '())"
-    assertEqual "null?" result (Right $ Boolean True)
-    result <- eval env $ parse "(null? '(1 2 3))"
-    assertEqual "null? fails on nonempty list" result (Right $ Boolean False)
 
 testDefine = TestCase $ do
     env <- defaultEnv
