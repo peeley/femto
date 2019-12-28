@@ -16,8 +16,8 @@ specification for Scheme, Common Lisp, or any other major dialect.
 - Define variables
 - Define functions
 - Error handling, errors do not crash REPL
+- Import code from other source files
 
 ## TODO
 - Define macros
-- Module/import system
 - Compilation and code generation with LLVM

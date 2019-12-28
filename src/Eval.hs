@@ -28,7 +28,11 @@ data Environment = Environment {
 
 eval :: Environment -> LispVal -> IO EvalResult
 eval _ (List [Word "quote", val]) = return $ return val
-eval env (List [Word "eval", val]) = eval env val
+eval env (List [Word "eval", val]) = do
+    body <- eval env val
+    case body of
+        Left err -> return $ Left err
+        Right list -> eval env list
 eval env (List [Word "define", Word name, body]) = do
     evalBody <- eval env body
     case evalBody of
