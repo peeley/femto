@@ -18,9 +18,9 @@ instance Show LispVal where
 
 parseString :: Parser LispVal
 parseString = do
-    char '"'
-    str <- zeroOrMore (letter <|> symbol <|> digit)
-    char '"'
+    char '"' <|> char '\''
+    str <- zeroOrMore $ satisfies ('"' /=)
+    char '"' <|> char '\''
     return $ String str
 
 parseInt :: Parser LispVal

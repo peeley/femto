@@ -59,6 +59,11 @@ eval env word@(Word name) = do
     case varDef of
         Just x -> return $ Right x
         _ -> return $ Right word
+eval env (List [Word "load", String filename]) = do
+    fileContents <- readFile filename
+    let loadedAst = parse fileContents
+    eval env loadedAst
+    return $ Right $ List []
 eval env (List (Word fun : args)) = do 
     argList <- mapM (eval env) args
     if (length . rights) argList == length args then

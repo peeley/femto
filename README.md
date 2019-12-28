@@ -15,6 +15,7 @@ specification for Scheme, Common Lisp, or any other major dialect.
 - Apply and evaluate arithmetic, boolean logic, and list functions
 - Define variables
 - Define functions
+- Error handling, errors do not crash REPL
 
 ## TODO
 - Define macros
