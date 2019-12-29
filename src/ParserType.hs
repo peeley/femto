@@ -2,6 +2,8 @@ module ParserType where
 
 import Data.Maybe (isJust)
 import Control.Applicative
+import Data.Map.Strict as M
+import Data.IORef
 
 newtype Parser a = Parser { runParser :: String -> Maybe (a, String) }
 
@@ -34,3 +36,4 @@ instance Alternative Parser where
         let out = p1 input
         if isJust out then out
         else p2 input
+

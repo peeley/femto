@@ -1,30 +1,12 @@
 module Eval where
 
+import LispTypes
 import Parser
-import Errors
 import Data.IORef
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Either
 import Control.Monad (when)
-
-type Vars = M.Map String LispVal -- map words to variables
-data LispFunc = LispFunc { 
-                    args :: [String],
-                    body :: LispVal,
-                    closure :: Vars
-                    }
-instance Eq LispFunc where
-    a == b = body a == body b
-instance Ord LispFunc where
-    a <= b = body a <= body b
-type Funcs = M.Map String LispFunc
-newtype InterpError = InterpError String
-type DefaultFuncs = M.Map String ([LispVal] -> EvalResult)
-data Environment = Environment { 
-                        vars :: IORef Vars, 
-                        funcs :: IORef Funcs,
-                        defaults :: DefaultFuncs }
 
 eval :: Environment -> LispVal -> IO EvalResult
 eval _ (List [Word "quote", val]) = return $ return val
@@ -37,15 +19,14 @@ eval env (List [Word "define", Word name, body]) = do
     evalBody <- eval env body
     case evalBody of
         Right evalRes -> do
-            oldVars <- readIORef $ vars env
-            writeIORef (vars env) (M.insert name evalRes oldVars)
+            oldbindings <- readIORef env
+            writeIORef env (M.insert name evalRes oldbindings)
             return $ Right $ Word name
         Left err -> return $ Left err
 eval env (List [Word "define", List (Word name:args), body]) = do
-    oldFuncs <- readIORef $ funcs env
-    vars <- readIORef $ vars env
-    let func = LispFunc { args = map show args, body = body, closure = vars }
-    writeIORef (funcs env) (M.insert name func oldFuncs)
+    oldbindings <- readIORef env
+    let func = Function { args = map show args, body = body, closure = oldbindings}
+    writeIORef env (M.insert name func oldbindings)
     return $ Right $ Word name
 eval env (List [Word "print", val]) = do
     eval env val >>= print
@@ -58,11 +39,13 @@ eval env (List [Word "if", cond, t, f]) = do
         _ -> return $ Left $ TypeError (show cond) "bool"
 eval env (List (Word "do":rest)) = last <$> mapM (eval env) rest
 eval env word@(Word name) = do
-    variables <- readIORef $ vars env
-    let varDef = M.lookup name variables
+    variables <- readIORef env
+    let varDef = lookup name variables
     case varDef of
+        --Just (Func{}) -> return $ Left $ TypeError name "variable"
+        --Just (DefaultFunc _) -> return $ Left $ TypeError name "variable"
         Just x -> return $ Right x
-        _ -> return $ Right word
+        Nothing -> return $ Left $ Undefined name
 eval env (List [Word "load", String filename]) = do
     fileContents <- readFile filename
     let loadedAst = parse fileContents
@@ -71,9 +54,9 @@ eval env (List [Word "load", String filename]) = do
 eval env (List (Word fun : args)) = do 
     argList <- mapM (eval env) args
     if (length . rights) argList == length args then
-        apply env fun $ rights argList
+        apply env fun $ rights argList -- if all args evaluate, pass to apply
     else
-        (return . Left . head . lefts) argList
+        (return . Left . head . lefts) argList -- otherwise, return error
 eval env val@(List [x]) = return $ Left $ NotFunc $ show x
 eval env val@(Integer i) = return $ Right val
 eval env val@(Boolean b) = return $ Right val
@@ -81,8 +64,21 @@ eval env val@(String s) = return $ Right val
 
 apply :: Environment -> String -> [LispVal] -> IO EvalResult
 apply env fname argVals = do
-    envFuncs <- readIORef $ funcs env
-    let m_lispFunc =  M.lookup fname envFuncs
+    bindings <- readIORef env
+    let boundDef = lookup fname bindings
+    case boundDef of
+        Just (DefaultFunc f) -> return $ Right $ f argVals
+        Just Function{args = args, body = body, closure = closure} ->
+            if length args /= length argVals then
+                return $ Left $ NumArgs fname (length args) (length argVals)
+            else do
+                let params = zip args argVals
+                outerScope <- readIORef env
+                innerScope <- newIORef $ M.union (M.fromList params) outerScope
+                eval innerScope body
+        Just x -> return $ Left $ NotFunc fname
+        Nothing -> return $ Left $ Undefined fname
+    {--
     if isNothing m_lispFunc
         then do
             let primitive = M.lookup fname $ defaults env
@@ -106,4 +102,4 @@ apply env fname argVals = do
                 let funcEnv = Environment { vars = funcVars, 
                                             funcs = funcs env,
                                             defaults = defaults env}
-                eval funcEnv $ body lispFunc
+                eval funcEnv $ body lispFunc --}

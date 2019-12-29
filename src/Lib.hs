@@ -7,8 +7,7 @@ module Lib (
     LispVal
 ) where
 
-import ParserType
-import Errors
+import LispTypes
 import Parser
 import Lexer
 import Eval
