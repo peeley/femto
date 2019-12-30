@@ -16,8 +16,8 @@ import System.IO
 import Data.IORef
 
 
-defaultFuncs :: DefaultFuncs
-defaultFuncs =  M.fromList 
+defaultEnv :: IO Environment
+defaultEnv =  newIORef . M.fromList $ map (\(x, y) -> (x, DefaultFunc y))
                 [("+", add), ("-", sub), ("*", mult), ("/", div_), ("^", pow),
                  ("inc", inc), ("dec", dec),
                  ("=", \[x, y] -> return $ Boolean (x == y)),
@@ -25,12 +25,6 @@ defaultFuncs =  M.fromList
                  ("<", lt), (">", gt), ("<=", lte), (">=", gte), ("&&", and_),
                  ("||", or_), ("not", not_), ("car", car), ("head", car),
                  ("cdr", cdr), ("tail", cdr), ("cons", cons)]
-
-defaultEnv :: IO Environment
-defaultEnv = do
-    vars <- newIORef M.empty
-    funcs <- newIORef M.empty
-    return $ Environment { vars = vars, funcs = funcs, defaults = defaultFuncs }
 
 add :: [LispVal] -> EvalResult
 add [Integer x, Integer y] = return $ Integer (x+y)

@@ -12,12 +12,21 @@ data LispVal = String String
              | Function { args :: [String],
                           body :: LispVal,
                           closure :: Bindings }
-               --deriving (Eq, Ord)
 
+instance Eq LispVal where
+    String x == String y = x == y
+    Integer x == Integer y = x == y
+    Word x == Word y = x == y
+    Boolean x == Boolean y = x == y
+    List x == List y = x == y
+    DefaultFunc x == DefaultFunc y = False 
+    -- this comparison defaulting to False shouldn't cause any problems
+    -- for Data.Map, since new DefaultFuncs will never be added to the
+    -- environment at runtime so no comparison needed
+    x@Function{} == y@Function{} = x == y
+    x == y = False
 
--- type Bindings = M.Map String LispVal #TODO: derive Eq, Ord for LispVal so
--- Bindings can be map, allows O(1) lookup for var/func definitions
-type Bindings = [(String, LispVal)]
+type Bindings = M.Map String LispVal 
 type Environment = IORef Bindings
 type EvalResult = Either Error LispVal
 
