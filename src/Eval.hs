@@ -25,9 +25,16 @@ eval env (List [Word "define", Word name, body]) = do
         Left err -> return $ Left err
 eval env (List [Word "define", List (Word name:args), body]) = do
     oldbindings <- readIORef env
-    let func = Function { args = map show args, body = body, closure = oldbindings}
+    let func = Function { args = map show args, 
+                          body = body, 
+                          closure = oldbindings}
     writeIORef env (M.insert name func oldbindings)
     return $ Right $ Word name
+eval env (List [Word "lambda", List args, body@(List _)]) = do
+    thisEnv <- readIORef env
+    return $ Right $ Function { args = map show args, 
+                                body = body, 
+                                closure = thisEnv }
 eval env (List [Word "print", val]) = do
     eval env val >>= print
     return $ Right $ List []
