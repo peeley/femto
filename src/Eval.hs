@@ -56,30 +56,49 @@ eval env (List [Word "load", String filename]) = do
     let loadedAst = parse fileContents
     eval env loadedAst
     return $ Right $ List []
+eval env (List (Word "apply":func:args)) = do
+    evaledFunc <- eval env func
+    bindings <- readIORef env
+    case evaledFunc of
+        Right f@Function{} -> evaluateArgs env f args
+        Left l -> return $ Left l
+        Right (Word w) -> do
+            let lookedup = M.lookup w bindings
+            case lookedup of 
+                Just f@Function{} -> evaluateArgs env f args
+                Just f@(DefaultFunc _) -> evaluateArgs env f args
+                Just x -> return $ Left $ NotFunc (show x)
+                Nothing -> return $ Left $ Undefined w
 eval env (List (Word fun : args)) = do 
-    argList <- mapM (eval env) args
-    if (length . rights) argList == length args then
-        apply env fun $ rights argList -- if all args evaluate, pass to apply
-    else
-        (return . Left . head . lefts) argList -- otherwise, return error
+    bindings <- readIORef env
+    let funcDef =  M.lookup fun bindings
+    case funcDef of
+        Nothing -> return $ Left $ Undefined (show fun)
+        Just f -> evaluateArgs env f args
 eval env val@(List [x]) = return $ Left $ NotFunc $ show x
 eval env val@(Integer i) = return $ Right val
 eval env val@(Boolean b) = return $ Right val
 eval env val@(String s) = return $ Right val
 
-apply :: Environment -> String -> [LispVal] -> IO EvalResult
-apply env fname argVals = do
-    bindings <- readIORef env
-    let boundDef = M.lookup fname bindings
-    case boundDef of
-        Just (DefaultFunc f) -> return $f argVals
-        Just Function{args = args, body = body, closure = closure} ->
+evaluateArgs :: Environment -> LispVal -> [LispVal] -> IO EvalResult
+evaluateArgs env func args = do
+    argList <- mapM (eval env) args
+    if (length . rights) argList == length args then
+        apply env func $ rights argList -- if all args evaluate, pass to apply
+    else
+        (return . Left . head . lefts) argList -- otherwise, return error
+
+
+apply :: Environment -> LispVal -> [LispVal] -> IO EvalResult
+apply env func argVals =
+    case func of
+        DefaultFunc f -> return $ f argVals
+        Function{args = args, body = body, closure = closure} ->
             if length args /= length argVals then
-                return $ Left $ NumArgs fname (length args) (length argVals)
+                return $ Left $ NumArgs (show func) (length args) (length argVals)
             else do
                 let params = zip args argVals
                 outerScope <- readIORef env
                 innerScope <- newIORef $ M.union (M.fromList params) outerScope
                 eval innerScope body
-        Just x -> return $ Left $ NotFunc fname
-        Nothing -> return $ Left $ Undefined fname
+        _ -> return $ Left $ NotFunc (show func)
