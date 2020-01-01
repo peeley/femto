@@ -56,19 +56,24 @@ eval env (List [Word "load", String filename]) = do
     let loadedAst = parse fileContents
     eval env loadedAst
     return $ Right $ List []
-eval env (List (Word "apply":func:args)) = do
-    evaledFunc <- eval env func
-    bindings <- readIORef env
-    case evaledFunc of
-        Right f@Function{} -> evaluateArgs env f args
-        Left l -> return $ Left l
-        Right (Word w) -> do
-            let lookedup = M.lookup w bindings
-            case lookedup of 
-                Just f@Function{} -> evaluateArgs env f args
-                Just f@(DefaultFunc _) -> evaluateArgs env f args
-                Just x -> return $ Left $ NotFunc (show x)
-                Nothing -> return $ Left $ Undefined w
+eval env (List [Word "apply", func, funcargs]) = do
+    evaledArgs <- eval env funcargs
+    case evaledArgs of
+        Left l -> return $ Left l  
+        Right (List args) -> do
+            evaledFunc <- eval env func
+            bindings <- readIORef env
+            case evaledFunc of
+                Right f@Function{} -> evaluateArgs env f args
+                Left l -> return $ Left l
+                Right (Word w) -> do
+                    let lookedup = M.lookup w bindings
+                    case lookedup of 
+                        Just f@Function{} -> evaluateArgs env f args
+                        Just f@(DefaultFunc _) -> evaluateArgs env f args
+                        Just x -> return $ Left $ NotFunc (show x)
+                        Nothing -> return $ Left $ Undefined w
+        Right _ -> return $ Left $ TypeError "apply" "function name and arg list"
 eval env (List (Word fun : args)) = do 
     bindings <- readIORef env
     let funcDef =  M.lookup fun bindings
