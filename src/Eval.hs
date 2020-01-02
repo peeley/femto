@@ -59,7 +59,7 @@ eval env (List [Word "load", String filename]) = do
 eval env (List [Word "apply", func, funcargs]) = do
     evaledArgs <- eval env funcargs
     case evaledArgs of
-        Left l -> return $ Left l  
+        Left l -> return $ Left l
         Right (List args) -> do
             evaledFunc <- eval env func
             bindings <- readIORef env
@@ -73,7 +73,7 @@ eval env (List [Word "apply", func, funcargs]) = do
                         Just f@(DefaultFunc _) -> evaluateArgs env f args
                         Just x -> return $ Left $ NotFunc (show x)
                         Nothing -> return $ Left $ Undefined w
-        Right _ -> return $ Left $ TypeError "apply" "function name and arg list"
+        Right _ -> return $ Left $ TypeError (show funcargs) "quoted list"
 eval env (List (Word fun : args)) = do 
     bindings <- readIORef env
     let funcDef =  M.lookup fun bindings
