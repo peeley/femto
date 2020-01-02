@@ -14,7 +14,9 @@ testSuite = TestList [TestLabel "Parse expressions" testParseExpr,
                       TestLabel "Evaluate arithmetic" testEvalArithmetic,
                       TestLabel "Evaluate boolean logic" testEvalBoolean,
                       TestLabel "List functions" testListFuncs,
-                      TestLabel "Define variables" testDefine]
+                      TestLabel "Define variables" testDefine,
+                      TestLabel "Pass/define values" testLambda,
+                      TestLabel "Apply functions" testApply]
 
 testParseExpr = TestList [
     parse "()" ~=? List [],
@@ -89,3 +91,22 @@ testDefine = TestCase $ do
               \    (factorial 5))"
     assertEqual "Recursive procedures" result (Right $ Integer 120)
 
+testLambda = TestCase $ do
+    env <- defaultEnv
+    result <- eval env $ parse "(do \
+                               \    (define square (lambda (x) (* x x))) \
+                               \    (square 5))"
+    assertEqual "Define var as lambda" result (Right $ Integer 25)
+    result <- eval env $ parse "(do \
+                               \    (define add (lambda (x y) (+ x y))) \
+                               \    (add 1 2))"
+    assertEqual "Define var as lambda, multiple args" result (Right $ Integer 3)
+
+testApply = TestCase $ do
+    env <- defaultEnv
+    result <- eval env $ parse "(do \
+                               \    (define (square x) (* x x)) \
+                               \    (apply square '(3)))"
+    assertEqual "Apply bound function" result (Right $ Integer 9)
+    result <- eval env $ parse "(do (apply (lambda (x) (* x x)) '(3)))"
+    assertEqual "Apply lambda function" result (Right $ Integer 9)

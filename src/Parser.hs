@@ -5,6 +5,7 @@ import LispTypes
 import Lexer
 import Control.Applicative ((<|>))
 import Data.Maybe (fromJust)
+import Control.Monad (void)
 
 parseString :: Parser LispVal
 parseString = do
@@ -51,14 +52,26 @@ parseQuote = do
 parseExpr :: Parser LispVal
 parseExpr = do
     whitespace
+    zeroOrMore parseComment
+    whitespace
     parseList <|> parseQuote <|> parseBoolean  <|> parseString <|> 
         parseInt <|> parseWord
 
+parseComment :: Parser ()
+parseComment = do
+    char ';'
+    zeroOrMore $ satisfies ('\n' /=)
+    char '\n'
+    return ()
+
+
 parseProgram :: Parser LispVal
 parseProgram = do
+    parseComment
     whitespace
     expr <- parseExpr
     whitespace
+    parseComment
     return expr
 
 parse :: String -> LispVal
