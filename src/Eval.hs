@@ -36,8 +36,10 @@ eval env (List [Word "lambda", List args, body@(List _)]) = do
                                 body = body, 
                                 closure = thisEnv }
 eval env (List [Word "print", val]) = do
-    eval env val >>= print
-    return $ Right $ List []
+    evaled <- eval env val
+    case evaled of
+        Right val -> print val >> return (Right $ List [])
+        Left l -> return $ Left l
 eval env (List [Word "if", cond, t, f]) = do
     evalCond <- eval env cond
     case evalCond of

@@ -67,11 +67,11 @@ parseComment = do
 
 parseProgram :: Parser LispVal
 parseProgram = do
-    parseComment
+    zeroOrMore parseComment
     whitespace
     expr <- parseExpr
     whitespace
-    parseComment
+    zeroOrMore parseComment
     return expr
 
 parse :: String -> LispVal
