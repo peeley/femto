@@ -102,7 +102,8 @@ apply env func argVals =
         DefaultFunc f -> return $ f argVals
         Function{args = args, body = body, closure = closure} ->
             if length args /= length argVals then
-                return $ Left $ NumArgs (show func) (length args) (length argVals)
+                return $ Left $ 
+                    NumArgs (show func) (length args) (length argVals)
             else do
                 let params = zip args argVals
                 outerScope <- readIORef env
