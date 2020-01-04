@@ -1,0 +1,15 @@
+(do
+    (define (null? x) (= x '()))
+    (define (square x) (* x x))
+    (define (map f l)
+        (if (null? l)
+            '()
+            (cons (f (head l)) (map f (tail l)))))
+    (define (id x) x)
+    (define (fold f accum l)
+        (if (null? l)
+            accum
+            (fold f (f accum (head l)) (tail l))))
+    (define (sum l) (fold + 0 l))
+    (define (product l) (fold * 1 l))
+)
