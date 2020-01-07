@@ -14,6 +14,10 @@ import Eval
 import qualified Data.Map.Strict as M
 import System.IO
 import Data.IORef
+import System.Console.Haskeline
+import Control.Monad
+import Control.Monad.IO.Class
+import Data.Maybe
 
 
 defaultEnv :: IO Environment
@@ -119,12 +123,14 @@ cons [x, List y] = return $ List (x:y)
 cons x = Left $ TypeError (show x) "two lists or singleton and list"
 
 repl :: Environment -> IO ()
-repl env = do
-    putStr "> "
-    hFlush stdout
-    input <- getLine
-    let ast = parse input
-    out <- last <$> mapM (eval env) ast
-    case out of
-        Left err -> print err >> repl env
-        Right result -> print result >> repl env
+repl env = runInputT defaultSettings loop
+    where 
+        loop :: InputT IO ()
+        loop = do
+            input <- getInputLine "> "
+            when (isNothing input || input == Just "") loop
+            let ast = parse $ fromJust input
+            out <- liftIO $ last <$> mapM (eval env) ast
+            case out of
+                Left err -> outputStrLn (show err) >> loop
+                Right result -> outputStrLn (show result) >> loop

@@ -53,22 +53,21 @@ parseExpr :: Parser LispVal
 parseExpr = do
     whitespace
     zeroOrMore parseComment
-    whitespace
     parseList <|> parseQuote <|> parseBoolean  <|> parseString <|> 
         parseInt <|> parseWord
 
 parseComment :: Parser ()
 parseComment = do
+    whitespace
     char ';'
     zeroOrMore $ satisfies ('\n' /=)
     char '\n'
+    whitespace
     return ()
 
 
 parseProgram :: Parser [LispVal]
 parseProgram = do
-    zeroOrMore parseComment
-    whitespace
     exprs <- zeroOrMore parseExpr
     whitespace
     zeroOrMore parseComment
@@ -77,6 +76,7 @@ parseProgram = do
 parse :: String -> [LispVal]
 parse program = case result of 
     Just (ast, "") -> ast
-    Just (_, rest) -> error "Parse ended before end of file."
-    Nothing -> error "Parse error."
+    Just (_, rest) -> error $ 
+        "Parse ended with part of file remainging: " ++ rest
+    Nothing -> error $ "Parse error while parsing: " ++ program
     where result = runParser parseProgram program

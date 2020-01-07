@@ -1,15 +1,41 @@
-(do
-    (define (null? x) (= x '()))
-    (define (square x) (* x x))
-    (define (map f l)
-        (if (null? l)
-            '()
-            (cons (f (head l)) (map f (tail l)))))
-    (define (id x) x)
-    (define (fold f accum l)
-        (if (null? l)
-            accum
-            (fold f (f accum (head l)) (tail l))))
-    (define (sum l) (fold + 0 l))
-    (define (product l) (fold * 1 l))
-)
+; Femto Standard Library
+; Defines all useful functions that can be bootstrapped with Femto
+; rather than written in the Haskell interpreter, i.e. functions not
+; requiring IO actions.
+
+
+; returns true if list is empty
+(define (null? x) (= x '()))
+
+; returns arithmetic square of integer
+(define (square x) (* x x))
+
+; apply function to every item of list
+(define (map f l)
+    (if (null? l)
+        '()
+        (cons (f (head l)) (map f (tail l)))))
+
+; identity function
+(define (id x) x)
+
+; apply binary function to list, accumulating into parameter
+(define (fold f accum l)
+    (if (null? l)
+        accum
+        (fold f (f accum (head l)) (tail l))))
+
+; get sum of integer list
+(define (sum l) (fold + 0 l))
+
+; get product of integer list
+(define (product l) (fold * 1 l))
+
+; increase integer by 1
+(define (inc x) (+ x 1))
+
+; decrease integer by 1
+(define (dec x) (- x 1))
+
+
+
