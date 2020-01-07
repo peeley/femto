@@ -12,5 +12,5 @@ main = do
     when (null args) $ repl env
     program <- readFile $ head args
     let ast = parse program
-    result <- eval env ast
+    result <- last <$> mapM (eval env) ast
     return ()

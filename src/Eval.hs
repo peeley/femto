@@ -56,7 +56,7 @@ eval env word@(Word name) = do
 eval env (List [Word "load", String filename]) = do
     fileContents <- readFile filename
     let loadedAst = parse fileContents
-    eval env loadedAst
+    mapM_ (eval env) loadedAst
     return $ Right $ List []
 eval env (List [Word "apply", func, funcargs]) = do
     evaledArgs <- eval env funcargs

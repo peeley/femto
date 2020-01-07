@@ -65,16 +65,16 @@ parseComment = do
     return ()
 
 
-parseProgram :: Parser LispVal
+parseProgram :: Parser [LispVal]
 parseProgram = do
     zeroOrMore parseComment
     whitespace
-    expr <- parseExpr
+    exprs <- zeroOrMore parseExpr
     whitespace
     zeroOrMore parseComment
-    return expr
+    return exprs
 
-parse :: String -> LispVal
+parse :: String -> [LispVal]
 parse program = case result of 
     Just (ast, "") -> ast
     Just (_, rest) -> error "Parse ended before end of file."

@@ -124,7 +124,7 @@ repl env = do
     hFlush stdout
     input <- getLine
     let ast = parse input
-    out <- eval env ast
+    out <- last <$> mapM (eval env) ast
     case out of
         Left err -> print err >> repl env
         Right result -> print result >> repl env
