@@ -17,6 +17,7 @@ specification for Scheme, Common Lisp, or any other major dialect.
 - Define functions
 - Error handling, errors do not crash REPL
 - Import code from other source files
+- IO functions for input/output to CLI
 
 ## TODO
 - Define macros

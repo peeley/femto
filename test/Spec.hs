@@ -18,95 +18,93 @@ testSuite = TestList [TestLabel "Parse expressions" testParseExpr,
                       TestLabel "Pass/define values" testLambda,
                       TestLabel "Apply functions" testApply]
 
+runProgram :: Environment -> (String -> IO EvalResult)
+runProgram env = fmap last . mapM (eval env) . parse
+
 testParseExpr = TestList [
-    parse "()" ~=? List [],
-    parse "123" ~=? Integer 123,
-    parse "#t" ~=? Boolean True,
-    parse "\"abc\"" ~=? String "abc",
-    parse "(abc)" ~=? List [Word "abc"],
-    parse "(+ 1 2)" ~=? List [Word "+", Integer 1, Integer 2]]
+    parse "()" ~=? [List []],
+    parse "123" ~=? [Integer 123],
+    parse "#t" ~=? [Boolean True],
+    parse "\"abc\"" ~=? [String "abc"],
+    parse "(abc)" ~=? [List [Word "abc"]],
+    parse "(+ 1 2)" ~=? [List [Word "+", Integer 1, Integer 2]]]
 
 testEvalArithmetic = TestCase $ do
     env <- defaultEnv
-    result <- eval env $ parse "(+ 1 2)"
+    result <- runProgram env "(+ 1 2)"
     assertEqual "Addition" result (Right $ Integer 3)
-    result <- eval env $ parse "(- 1 1)"
+    result <- runProgram env "(- 1 1)"
     assertEqual "Subtraction" result (Right $ Integer 0)
-    result <- eval env $ parse "(* 3 3)"
+    result <- runProgram env "(* 3 3)"
     assertEqual "Multiplication" result (Right $ Integer 9)
-    result <- eval env $ parse "(/ 4 2)"
+    result <- runProgram env "(/ 4 2)"
     assertEqual "Division" result (Right $ Integer 2)
-    result <- eval env $ parse "(^ 2 2)"
+    result <- runProgram env "(^ 2 2)"
     assertEqual "Power" result (Right $ Integer 4)
-    result <- eval env $ parse "(/ 1 0)"
+    result <- runProgram env "(/ 1 0)"
     assertBool "Divide by zero" (isLeft result)
 
 testEvalBoolean = TestCase $ do
     env <- defaultEnv
-    result <- eval env $ parse "(= 1 1)"
+    result <- runProgram env "(= 1 1)"
     assertEqual "Equals" result (Right $ Boolean True)
-    result <- eval env $ parse "(!= 1 2)"
+    result <- runProgram env "(!= 1 2)"
     assertEqual "Not equals" result (Right $ Boolean True)
-    result <- eval env $ parse "(< 1 2)"
+    result <- runProgram env "(< 1 2)"
     assertEqual "Less than" result (Right $ Boolean True)
-    result <- eval env $ parse "(&& #t #t)"
+    result <- runProgram env "(&& #t #t)"
     assertEqual "And" result (Right $ Boolean True)
-    result <- eval env $ parse "(|| #t #f)"
+    result <- runProgram env "(|| #t #f)"
     assertEqual "Or" result (Right $ Boolean True)
-    result <- eval env $ parse "(not #f)"
+    result <- runProgram env "(not #f)"
     assertEqual "Not" result (Right $ Boolean True)
 
 testListFuncs = TestCase $ do
     env <- defaultEnv
-    result <- eval env $ parse "(head '(1 2 3))"
+    result <- runProgram env "(head '(1 2 3))"
     assertEqual "Head/car" result (Right $ Integer 1)
-    result <- eval env $ parse "(tail '(1 2 3))"
+    result <- runProgram env "(tail '(1 2 3))"
     assertEqual "Tail/cdr" result (Right $ List [Integer 2, Integer 3])
-    result <- eval env $ parse "(cons 1 '(2 3))"
+    result <- runProgram env "(cons 1 '(2 3))"
     assertEqual "Cons singleton and list" result 
         (Right $ List [Integer 1, Integer 2, Integer 3])
-    result <- eval env $ parse "(cons '(1 2) '(3 4))"
+    result <- runProgram env "(cons '(1 2) '(3 4))"
     assertEqual "Cons two lists" result 
         (Right $ List [Integer 1, Integer 2, Integer 3, Integer 4])
-    result <- eval env $ parse "(cons '(1 2 3) '())"
+    result <- runProgram env "(cons '(1 2 3) '())"
     assertEqual "Cons list and empty list" result 
         (Right $ List [Integer 1, Integer 2, Integer 3])
-    result <- eval env $ parse "(head '())"
+    result <- runProgram env "(head '())"
     assertBool "Head/car fails on empty" (isLeft result)
-    result <- eval env $ parse "(tail '())"
+    result <- runProgram env "(tail '())"
     assertBool "Tail/cdr fails on empty" (isLeft result)
 
 testDefine = TestCase $ do
     env <- defaultEnv
-    result <- eval env $ parse "(do (define x 5) x)"
+    result <- runProgram env "(define x 5) x"
     assertEqual "Define integer variable" result (Right $ Integer 5)
-    result <- eval env $ 
-        parse "(do (define (square x) (* x x)) (square 3))"
+    result <- runProgram env "(define (square x) (* x x)) (square 3)"
     assertEqual "Define simple procedure" result (Right $ Integer 9)
-    result <- eval env $
-        parse "(do (define (factorial n) \
+    result <- runProgram env "(define (factorial n) \
               \     (if (= n 0) \
               \         1 \
               \         (* n (factorial (- n 1))))) \
-              \    (factorial 5))"
+              \    (factorial 5)"
     assertEqual "Recursive procedures" result (Right $ Integer 120)
 
 testLambda = TestCase $ do
     env <- defaultEnv
-    result <- eval env $ parse "(do \
-                               \    (define square (lambda (x) (* x x))) \
-                               \    (square 5))"
+    result <- runProgram env "(define square (lambda (x) (* x x))) \
+                             \(square 5)"
     assertEqual "Define var as lambda" result (Right $ Integer 25)
-    result <- eval env $ parse "(do \
-                               \    (define add (lambda (x y) (+ x y))) \
-                               \    (add 1 2))"
+    result <- runProgram env "(define add (lambda (x y) (+ x y))) \
+                             \(add 1 2)"
     assertEqual "Define var as lambda, multiple args" result (Right $ Integer 3)
 
 testApply = TestCase $ do
     env <- defaultEnv
-    result <- eval env $ parse "(do \
-                               \    (define (square x) (* x x)) \
-                               \    (apply square '(3)))"
+    result <- runProgram env "(define (square x) (* x x)) \
+                             \(apply square '(3))"
     assertEqual "Apply bound function" result (Right $ Integer 9)
-    result <- eval env $ parse "(do (apply (lambda (x) (* x x)) '(3)))"
+    result <- runProgram env "(apply (lambda (x) (* x x)) '(3))"
     assertEqual "Apply lambda function" result (Right $ Integer 9)
