@@ -16,7 +16,8 @@ testSuite = TestList [TestLabel "Parse expressions" testParseExpr,
                       TestLabel "List functions" testListFuncs,
                       TestLabel "Define variables" testDefine,
                       TestLabel "Pass/define values" testLambda,
-                      TestLabel "Apply functions" testApply]
+                      TestLabel "Apply functions" testApply,
+                      TestLabel "Load source files" testLoad]
 
 runProgram :: Environment -> (String -> IO EvalResult)
 runProgram env = fmap last . mapM (eval env) . parse
@@ -108,3 +109,8 @@ testApply = TestCase $ do
     assertEqual "Apply bound function" result (Right $ Integer 9)
     result <- runProgram env "(apply (lambda (x) (* x x)) '(3))"
     assertEqual "Apply lambda function" result (Right $ Integer 9)
+
+testLoad = TestCase $ do
+    env <- defaultEnv
+    result <- runProgram env "(load \"src/stdlib.fm\") (square 5)"
+    assertEqual "Load func from stdlib" result (Right $ Integer 25)
