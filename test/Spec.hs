@@ -17,7 +17,7 @@ testSuite = TestList [TestLabel "Parse expressions" testParseExpr,
                       TestLabel "Define variables" testDefine,
                       TestLabel "Pass/define values" testLambda,
                       TestLabel "Apply functions" testApply,
-                      TestLabel "Load source files" testLoad]
+                      TestLabel "Standard library" testLoad]
 
 runProgram :: Environment -> (String -> IO EvalResult)
 runProgram env = fmap last . mapM (eval env) . parse
@@ -114,3 +114,8 @@ testLoad = TestCase $ do
     env <- defaultEnv
     result <- runProgram env "(load \"src/stdlib.fm\") (square 5)"
     assertEqual "Load func from stdlib" result (Right $ Integer 25)
+    result <- runProgram env "(map inc '(1 2 3))"
+    assertEqual "Map function" result 
+        (Right $ List [Integer 1, Integer 4, Integer 9])
+    result <- runProgram env "(fold + 0 '(1 2 3))"
+    assertEqual "Fold function" result (Right $ Integer 6)
