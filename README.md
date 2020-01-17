@@ -18,7 +18,8 @@ specification for Scheme, Common Lisp, or any other major dialect.
 - Error handling, errors do not crash REPL
 - Import code from other source files
 - IO functions for input/output to CLI
+- Compilation and code generation with LLVM
 
 ## TODO
 - Define macros
-- Compilation and code generation with LLVM
+

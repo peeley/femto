@@ -24,6 +24,7 @@ dependencies:
 - containers
 - HUnit
 - haskeline
+- llvm-hs
 
 library:
   source-dirs: src
