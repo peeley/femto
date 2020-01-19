@@ -8,10 +8,8 @@ import Control.Monad
 main :: IO ()
 main = do
     args <- E.getArgs
-    if length args > 1 then do
-        let ast = runLLVM initModule logic
-        runJit ast
-        return ()
+    if length args > 1 then
+        toLLVM initModule
     else do
         putStrLn ""
         env <- defaultEnv
