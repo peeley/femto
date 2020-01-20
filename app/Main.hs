@@ -8,11 +8,12 @@ import Control.Monad
 main :: IO ()
 main = do
     args <- E.getArgs
-    if length args > 1 then
+    env <- defaultEnv
+    when (null args) $ repl env
+    if head args == "-c" then
         toLLVM initModule
     else do
         putStrLn ""
-        env <- defaultEnv
         when (null args) $ repl env
         program <- readFile $ head args
         let ast = parse program

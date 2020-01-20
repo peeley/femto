@@ -18,7 +18,7 @@ int = IntegerType 32
 
 defAdd :: AST.Definition
 defAdd = GlobalDefinition functionDefaults {
-    name = "add",
+    name = "main",
     parameters = (
         [ Parameter int (Name "a") [],
           Parameter int (Name "b") [] ]
