@@ -24,8 +24,6 @@ dependencies:
 - containers
 - HUnit
 - haskeline
-- llvm-hs
-- llvm-hs-pure
 - bytestring
 
 library:

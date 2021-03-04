@@ -116,6 +116,6 @@ testLoad = TestCase $ do
     assertEqual "Load func from stdlib" result (Right $ Integer 25)
     result <- runProgram env "(map inc '(1 2 3))"
     assertEqual "Map function" result 
-        (Right $ List [Integer 1, Integer 4, Integer 9])
+        (Right $ List [Integer 2, Integer 3, Integer 4])
     result <- runProgram env "(fold + 0 '(1 2 3))"
     assertEqual "Fold function" result (Right $ Integer 6)

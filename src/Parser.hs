@@ -73,10 +73,11 @@ parseProgram = do
     zeroOrMore parseComment
     return exprs
 
+-- TODO change to error type for errors w/ parsing
 parse :: String -> [LispVal]
 parse program = case result of 
     Just (ast, "") -> ast
     Just (_, rest) -> error $ 
-        "Parse ended with part of file remainging: " ++ rest
+        "Parse ended with part of file remaining: " ++ rest
     Nothing -> error $ "Parse error while parsing: " ++ program
     where result = runParser parseProgram program
